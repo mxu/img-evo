@@ -3,3 +3,8 @@
     float: left;
     margin: 1em;
 }
+
+#console textarea {
+    resize: none;
+    height: 12em;
+}
