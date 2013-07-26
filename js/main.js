@@ -29,6 +29,7 @@ var maxAlpha = 0.6;                         // maximum transparency
 var srcCtx;
 var srcData;
 var outCtx;
+var bigCanvas;
 var srcWidth;
 var srcHeight;
 var runTimer;
@@ -60,8 +61,18 @@ $(document).ready(function() {
     outCanvas.height = srcHeight;
     outCtx = outCanvas.getContext('2d');
 
+    // Setup modal canvas
+    bigCanvas = $('#canvasModal > canvas')[0];
+    bigCanvas.width = srcWidth * 4;
+    bigCanvas.height = srcHeight * 4;
+
     // Bind the run button
     $('#runBtn').click(run);
+
+    $('#ssBtn').click(function() {
+        $(this).slideUp();
+        $('#slideshow').slideUp();
+    });
 });
 
 // Start evolution
@@ -133,19 +144,29 @@ function encode() {
     var bestFit = pop.getBestFit();
     bestFit.genome.unshift(polySides);
     var encodedData = window.btoa(bestFit.genome.join());
-    log(encodedData);
+    $.post('/save', {genome: encodedData}, function(result) {
+        alert(result);
+    });
+    //log(encodedData);
+    log('Genome encoded and saved to server');
 }
 
 // Decode base 64 genome
 function decode() {
-    var encodedData = $('#console > textarea').val();
-    var decodedData = window.atob(encodedData);
-    var parsedDecode = decodedData.split(',');
-    polySides = parsedDecode.shift();
-    $('#txtPolySides').val(polySides);
-    drawGenome(parsedDecode);
-    seed = parsedDecode;
-    log('Genome decoded and seeded');
+    $.get('/genome.txt', function(encodedData) {
+        var decodedData = window.atob(encodedData);
+        var parsedDecode = decodedData.split(',');
+        polySides = parsedDecode.shift();
+        $('#txtPolySides').val(polySides);
+        drawGenome(parsedDecode);
+        seed = parsedDecode;
+        log('Genome decoded and seeded');
+    });
+}
+
+function showBest() {
+    var bestFit = pop.getBestFit();
+    paintGenome(bestFit.genome, bigCanvas.getContext('2d'), 4);
 }
 
 // Output information to the page
@@ -163,23 +184,29 @@ function rInt(n) {
 
 // Draw a genome onto the output canvas
 function drawGenome(genome) {
+    return paintGenome(genome, outCtx, 1);   
+}
+
+function paintGenome(genome, ctx, scale) {
+    var w = srcWidth * scale;
+    var h = srcHeight * scale;
     // Clear the canvas
-    outCtx.fillStyle = '#000';
-    outCtx.fillRect(0, 0, srcWidth, srcHeight);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
     // Loop through the genome and draw each poly
     for(var i = 0; i < genome.length; i += polyGeneSize) {
-        outCtx.fillStyle = 'rgba(' + 
+        ctx.fillStyle = 'rgba(' + 
             Math.floor(genome[i] * 255) + ',' + 
             Math.floor(genome[i+1] * 255) + ',' + 
             Math.floor(genome[i+2] * 255) + ',' + 
             genome[i+3] + ')';
-        outCtx.beginPath();
-        outCtx.moveTo(genome[i+4] * srcWidth, genome[i+5] * srcHeight);for(var j = 1; j < polySides; j++)
-            outCtx.lineTo(genome[i+5+j] * srcWidth, genome[i+6+j] * srcHeight);
-        outCtx.closePath();
-        outCtx.fill();
+        ctx.beginPath();
+        ctx.moveTo(genome[i+4] * w, genome[i+5] * h);for(var j = 1; j < polySides; j++)
+            ctx.lineTo(genome[i+5+j] * w, genome[i+6+j] * h);
+        ctx.closePath();
+        ctx.fill();
     }
-    return outCtx.getImageData(0, 0, srcWidth, srcHeight).data;
+    return outCtx.getImageData(0, 0, w, h).data;
 }
 
 // Sort phenotypes by fitness comparator

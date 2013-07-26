@@ -15,6 +15,7 @@
         document.write('<script src=' + ('__proto__' in {} ? 'js/vendor/zepto' : 'js/vendor/jquery') + '.js><\/script>')
         </script>
         <script src="js/foundation.min.js"></script>
+        <script src="js/foundation/foundation.orbit.js"></script>
         <script>
         $(document).foundation();
         </script>
@@ -25,7 +26,42 @@
                 </li>
             </ul>
         </nav>
-        </nav>
+        <div id="slideshow" class="row">
+            <div class="large-12 columns">
+                <div class="panel">
+                    <ul data-orbit>
+                        <li>
+                            <img src="img/demo/1.jpg"/>
+                            <div class="orbit-caption">This is how the numbers become pictures</div>
+                        </li>
+                         <li>
+                            <img src="img/demo/2.jpg"/>
+                            <div class="orbit-caption">How to tell if the image is converging</div>
+                        </li>
+                         <li>
+                            <img src="img/demo/3.jpg"/>
+                            <div class="orbit-caption">Only the best survive to reproduce</div>
+                        </li>
+                        <li>
+                            <img src="img/demo/4.jpg"/>
+                            <div class="orbit-caption">New pictures being born from old ones</div>
+                        </li>
+                         <li>
+                            <img src="img/demo/5.jpg"/>
+                            <div class="orbit-caption">Random tweaks</div>
+                        </li>
+                         <li>
+                            <img src="img/demo/6.jpg"/>
+                            <div class="orbit-caption">Minimize effort setting up platform and environment to focus on application development</div>
+                        </li>
+                    </ul>
+                    <a href="#" id="ssBtn" class="button expand radius">Close Slide</a>
+                </div>
+            </div>
+        </div>
+        <script>
+            Foundation.libs.orbit.init();
+        </script>
         <div class="row">
             <div class="large-6 columns">
                 <h4>Source Image</h4>
@@ -52,7 +88,7 @@
         <div class="row">
             <div class="large-8 columns">
                 <fieldset>
-                    <legend>Population Control</legend>
+                    <legend>Population Parameters</legend>
                     <div class="large-6 columns">
                         <div class="row collapse">
                             <div class="large-8 columns">
@@ -150,10 +186,14 @@
                 <fieldset>
                     <legend>Controls</legend>
                         <a href="#" id="runBtn" class="small expand success button radius">Run</a>
-                        <a href="#" onclick="encode();" class="small expand button radius">Encode to Base64</a>
-                        <a href="#" onclick="decode();" class="small expand button radius">Decode from Base64</a>
+                        <a href="#" onclick="encode();" class="small expand button radius">Save</a>
+                        <a href="#" onclick="decode();" class="small expand button radius">Load</a>
+                        <a href="#" onclick="showBest();" data-reveal-id="canvasModal" class="small expand button radius">Big Canvas</a>
                 </fieldset>
             </div>
+        </div>
+        <div id="canvasModal" class="reveal-modal imgFrame">
+            <canvas></canvas>
         </div>
     </body>
 </html>

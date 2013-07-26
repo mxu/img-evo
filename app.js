@@ -1,4 +1,5 @@
 var express = require('express'),
+    fs = require('fs'),
     app = express.createServer()
 
 app.configure(function(){
@@ -11,6 +12,18 @@ app.configure(function(){
         showStack: true
     }));
     app.use(app.router);
+});
+
+app.post('/save', function(req, res){
+    console.log("Save genome");
+    fs.writeFile('genome.txt', req.body.genome, function(err) {
+        if(err) {
+            res.end('Error writing file!');
+            return console.log(err);
+        }
+        res.end('Genome saved!');
+        console.log('genome written to genome.txt');
+    });
 });
 
 app.get('/', function(req, res){
