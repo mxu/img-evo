@@ -43,38 +43,51 @@ $(document).ready(function() {
     outCanvas.width = imgWidth;
     outCanvas.height = imgHeight;
     outCtx = outCanvas.getContext('2d');
+
+    $('#runBtn').click(run);
 });
 
 // Primary loop
 function run() {
-    // Reset timer
-    if(runTimer) {
-        stop();
-    }
-    // Create initial population
     pop = new Population(popSize);
     gen = 0;
+    startTime = new Date().getTime();
+    update();
 
-    function update() {
-        pop.genStep();
-        gen++;
+    var btn = $('#runBtn');
+    btn.text('Stop');
+    btn.addClass('alert');
+    btn.unbind('click');
+    btn.click(stop);
+
+}
+
+// Stop timer
+function stop() {
+    clearTimeout(runTimer);
+    runTimer = 0;
+
+    var btn = $('#runBtn');
+    btn.text('Run');
+    btn.removeClass('alert');
+    btn.unbind('click');
+    btn.click(run);
+}
+
+// Step to next generation
+function update() {
+    pop.genStep();
+    gen++;
+    var runTime = ((new Date().getTime() - startTime) / 1000);
+    if(gen % 2 == 0) {
         var bestFit = pop.getBestFit();
-        drawGenome(bestFit.genome);
-        var runTime = ((new Date().getTime() - startTime) / 1000);
         log("Generation: " + gen,
             "Best fit: " + (bestFit.fitness * 100).toFixed(6) + "%",
             "Polygons: " + (bestFit.genome.length / polyGeneSize),
             "Time: " + runTime.toFixed(2),
             "Time per gen: " + (runTime / gen).toFixed(2));
-        runTimer = setTimeout(update, 10);
     }
-    startTime = new Date().getTime();
-    update();
-}
-
-function stop() {
-    clearTimeout(runTimer);
-    runTimer = 0;
+    runTimer = setTimeout(update, 10);
 }
 
 // Encode genome to base 64
