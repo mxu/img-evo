@@ -1,15 +1,15 @@
 // GA configurations
 var polyCount = 50;
 var polySides = 6;
-var minAlpha = 0.2;
+var minAlpha = 0.1;
 var maxAlpha = 0.6;
-var popSize = 4;
-var popElite = 0.5;
+var popSize = 20;
+var popElite = 0.25;
 var polyGeneSize = 4 + polySides * 2;
-var hardMutate = 0.01;
-var softMutate = 0.05;
+var hardMutate = 0.001;
+var softMutate = 0.01;
 var softMutateDrift = 0.1;
-var addPoly = 0.01;
+var addPoly = 0.05;
 // Globals
 var inCtx;
 var inData;
@@ -53,15 +53,16 @@ function run() {
     // Create initial population
     var pop = new Population(popSize);
     var gen = 0;
-    // Product the next generation and 
+
     function update() {
         pop.genStep();
         gen++;
-        var runTime = ((new Date().getTime() - startTime) / 1000);
         var bestFit = pop.getBestFit();
-        //drawGenome(bestFit.genome);
+        drawGenome(bestFit.genome);
+        var runTime = ((new Date().getTime() - startTime) / 1000);
         log("Generation: " + gen,
             "Best fit: " + (bestFit.fitness * 100).toFixed(6) + "%",
+            "Polygons: " + (bestFit.genome.length / polyGeneSize),
             "Time: " + runTime.toFixed(2),
             "Time per gen: " + (runTime / gen).toFixed(2));
         runTimer = setTimeout(update, 10);
@@ -135,17 +136,17 @@ Population.prototype.genStep = function() {
     // Cull the lower end of population
     var numParents = Math.floor(popSize * popElite);
     var numChildren = popSize - numParents;
-    this.members.length = numParents;
     // Refill population by breeding the upper end of current population
-    while(this.members.length < popSize) {
+    while(children.length < popSize) {
         var a = rInt(numParents);
         var b = rInt(numParents);
         while(b == a)
             b = rInt(numParents);
-        var p1 = this.members[0];
+        var p1 = this.members[a];
         var p2 = this.members[b];
-        this.members.push(new Phenotype(p1.genome, p2.genome));
+        children.push(new Phenotype(p1.genome, p2.genome));
     }
+    this.members = children;
 }
 
 Population.prototype.getBestFit = function() {
@@ -173,36 +174,21 @@ function Phenotype(p1, p2) {
         // Born from 2 parent genomes
         // Step through shorter genome and encode set of genes for each polygon
         for(var i = 0; i < b.length; i += polyGeneSize) {
-            // Hard mutation of an entire polygon
-            if(Math.random() < hardMutate) {
-                // RGB components 0-255
-                this.genome.push(Math.random());
-                this.genome.push(Math.random());
-                this.genome.push(Math.random());
-                // Alpha component 0-1
-                this.genome.push(minAlpha + Math.random() * (maxAlpha - minAlpha));
-                // Polygon vert coordinates
-                for(var j = 0; j < polySides; j++) {
-                    this.genome.push(Math.random());
-                    this.genome.push(Math.random());
+            var p = (Math.random() < 0.5) ? p1 : p2;
+            for(var j = 0; j < polyGeneSize; j++) {
+                var val = p[i + j];
+                if(Math.random() < softMutate) {
+                    val += Math.random() * softMutateDrift * 2 - softMutateDrift;
+                } else if(Math.random() < hardMutate) {
+                    val = Math.random();
                 }
-            } else {
-                // Uniform crossover
-                var p = (Math.random() < 0.5) ? p1 : p2;
-                for(var j = 0; j < polyGeneSize; j++) {
-                    var val = p[i + j];
-                    // Soft mutation of a single gene
-                    if(Math.random() < softMutate) {
-                        val += Math.random() * softMutateDrift * 2 - softMutateDrift;
-                        if(val < 0) val = 0;
-                        if(val > 1) val = 1;
-                        if(j == 3) {
-                            if(val < minAlpha) val = minAlpha;
-                            if(val > maxAlpha) val = maxAlpha;
-                        }
+                if(val < 0) val = 0;
+                    if(val > 1) val = 1;
+                    if(j == 3) {
+                        if(val < minAlpha) val = minAlpha;
+                        if(val > maxAlpha) val = maxAlpha;
                     }
-                    this.genome.push(val);
-                }
+                this.genome.push(val);
             }
         }
         // Fill in from the longer genome
@@ -231,9 +217,6 @@ Phenotype.prototype.addPoly = function() {
     this.genome.push(Math.random());
     this.genome.push(Math.random());
     this.genome.push(Math.random());
-    // this.genome.push(0);
-    // this.genome.push(0);
-    // this.genome.push(0);
     // Alpha component 0-1
     this.genome.push(minAlpha + Math.random() * (maxAlpha - minAlpha));
     // Polygon vert coordinates
