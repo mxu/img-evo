@@ -1,21 +1,22 @@
 // GA configurations
-var polyCount = 100;
-var polySides = 6;
-var minAlpha = 0.2;
-var maxAlpha = 0.6;
-var popSize = 10;
-var popElite = 0.25;
-var polyGeneSize = 4 + polySides * 2;
-var hardMutate = 0;
-var softMutate = 0.005;
-var softMutateDrift = 0.2;
-var addPoly = 0.05;
+var polyCount = 100;                        // maximum number of polygons per genome
+var polySides = 6;                          // number of points per polygon
+var polyGeneSize = 4 + polySides * 2;       // number of genes to represent a complete poly
+var minAlpha = 0.2;                         // minimum transparency
+var maxAlpha = 0.6;                         // maximum transparency
+var popSize = 20;                           // number of genomes per generation
+var popElite = 0.5;                         // percentage of each generation to reproduce
+var softMutateDrift = 0.05;                 // maximum amount of change for a soft mutation
+var softMutate = 0.4;                       // percentage chance of a soft mutation
+var hardMutate = 0.05;                      // percentage chance of a hard mutation
+var addPoly = 0.01;                         // percentage chance of adding a polygon to the genome
+var maxMutations = 6;                       // maximum mutations per generation
 // Globals
-var inCtx;
-var inData;
+var srcCtx;
+var srcData;
 var outCtx;
-var imgWidth;
-var imgHeight;
+var srcWidth;
+var srcHeight;
 var runTimer;
 var startTime;
 var pop;
@@ -24,26 +25,27 @@ var gen;
 $(document).ready(function() {
     // Get image dimensions
     var img = $('#srcImg > img')[0];
-    imgWidth = img.width;
-    imgHeight = img.height;
+    srcWidth = img.width;
+    srcHeight = img.height;
     
     // Copy source image onto a canvas
     inCanvas = $('#srcImg > canvas')[0];
-    inCanvas.width = imgWidth;
-    inCanvas.height = imgHeight;
-    inCtx = inCanvas.getContext('2d');
-    inCtx.drawImage(img, 0, 0);
+    inCanvas.width = srcWidth;
+    inCanvas.height = srcHeight;
+    srcCtx = inCanvas.getContext('2d');
+    srcCtx.drawImage(img, 0, 0);
     // Store the pixel data for source image
-    inData = inCtx.getImageData(0, 0, imgWidth, imgHeight).data;
+    srcData = srcCtx.getImageData(0, 0, srcWidth, srcHeight).data;
     // Hide the original image DOM element
     img.style.display = 'none';
 
     // Setup output canvas
     outCanvas = $('#outImg > canvas')[0];
-    outCanvas.width = imgWidth;
-    outCanvas.height = imgHeight;
+    outCanvas.width = srcWidth;
+    outCanvas.height = srcHeight;
     outCtx = outCanvas.getContext('2d');
 
+    // Bind the run button
     $('#runBtn').click(run);
 });
 
@@ -59,7 +61,6 @@ function run() {
     btn.addClass('alert');
     btn.unbind('click');
     btn.click(stop);
-
 }
 
 // Stop evolution
@@ -121,7 +122,7 @@ function rInt(n) {
 function drawGenome(genome) {
     // Clear the canvas
     outCtx.fillStyle = '#000';
-    outCtx.fillRect(0, 0, imgWidth, imgHeight);
+    outCtx.fillRect(0, 0, srcWidth, srcHeight);
     // Loop through the genome and draw each poly
     for(var i = 0; i < genome.length; i += polyGeneSize) {
         outCtx.fillStyle = 'rgba(' + Math.floor(genome[i] * 255) +
@@ -129,12 +130,12 @@ function drawGenome(genome) {
             ',' + Math.floor(genome[i+2] * 255) +
             ',' + genome[i+3] + ')';
         outCtx.beginPath();
-        outCtx.moveTo(genome[i+4] * imgWidth, genome[i+5] * imgHeight);for(var j = 1; j < polySides; j++)
-            outCtx.lineTo(genome[i+5+j] * imgWidth, genome[i+6+j] * imgHeight);
+        outCtx.moveTo(genome[i+4] * srcWidth, genome[i+5] * srcHeight);for(var j = 1; j < polySides; j++)
+            outCtx.lineTo(genome[i+5+j] * srcWidth, genome[i+6+j] * srcHeight);
         outCtx.closePath();
         outCtx.fill();
     }
-    return outCtx.getImageData(0, 0, imgWidth, imgHeight).data;
+    return outCtx.getImageData(0, 0, srcWidth, srcHeight).data;
 }
 
 // Sort phenotypes by fitness comparator
@@ -177,6 +178,7 @@ Population.prototype.genStep = function() {
     }
 }
 
+// Sort the population and return the highest fit member
 Population.prototype.getBestFit = function() {
     this.members = this.members.sort(fitSort);
     return this.members[0];
@@ -190,48 +192,50 @@ Population.prototype.getBestFit = function() {
 function Phenotype(p1, p2) {
     this.genome = [];
     this.fitness = 0;
-
     if(p1 && p2) {
-        if(p1.length >= p2.length) {
-            a = p1;
-            b = p2;
+        // Breed from 2 parents
+        if(p1.length == p2.length) {
+            // Uniform crossover
+            for(var i = 0; i < p1.length; i += polyGeneSize) {
+                var p = (Math.random() < 5) ? p1 : p2;
+                for(var j = 0; j < polyGeneSize; j++)
+                    this.genome.push(p[i + j]);
+            }
         } else {
-            a = p2;
-            b = p1;
+            // One point crossover
+            var i = 0;
+            var cross = Math.floor(Math.random() * p1.length / polyGeneSize) * polyGeneSize;
+            for(; i < cross; i += polyGeneSize)
+                for(var j = 0; j < polyGeneSize; j++)
+                    this.genome.push(p1[i + j]);
+            for(; i < p2.length; i += polyGeneSize)
+                for(var j = 0; j < polyGeneSize; j++)
+                    this.genome.push(p2[i + j]);
         }
-
-        // Born from 2 parent genomes
-        // Step through shorter genome and encode set of genes for each polygon
-        for(var i = 0; i < b.length; i += polyGeneSize) {
-            var p = (Math.random() < 0.5) ? p1 : p2;
-            for(var j = 0; j < polyGeneSize; j++) {
-                var val = p[i + j];
-                if(Math.random() < softMutate) {
-                    val += Math.random() * softMutateDrift * 2 - softMutateDrift;
-                } else if(Math.random() < hardMutate) {
-                    val = Math.random();
-                }
-                if(val < 0) val = 0;
-                    if(val > 1) val = 1;
-                    if(j == 3) {
-                        if(val < minAlpha) val = minAlpha;
-                        if(val > maxAlpha) val = maxAlpha;
-                    }
-                this.genome.push(val);
+        // Mutations
+        var mutations = rInt(maxMutations) + 1;
+        for(var i = 0; i < mutations; i++) {
+            if(Math.random() < softMutate) {
+                // Soft mutation
+                var mIndex = rInt(this.genome.length);
+                var val = this.genome[mIndex] + Math.random() * softMutateDrift * 2 - softMutateDrift;
+                if(mIndex % polyGeneSize == 3)
+                    this.genome[mIndex] = Math.max(maxAlpha, Math.min(minAlpha, val));
+                else    
+                    this.genome[mIndex] = Math.max(1, Math.min(0, val));
+            } else if(Math.random() < hardMutate) {
+                // Hard mutation
+                var mIndex = rInt(this.genome.length);
+                if(mIndex % polyGeneSize == 3)
+                    this.genome[mIndex] = minAlpha + Math.random() * (maxAlpha - minAlpha);
+                else
+                    this.genome[mIndex] = Math.random();    
+            } else if(this.genome.length / polyGeneSize < polyCount && Math.random() < addPoly) {
+                // Add polyton
+                this.addPoly();
             }
         }
-        // Fill in from the longer genome
-        if(a.length > b.length) {
-            for(var i = b.length; i < a.length; i += polyGeneSize) {
-                for(var j = 0; j < polyGeneSize; j++) {
-                    this.genome.push(a[i + j]);
-                }
-            }
-        }
-        // Add polygon
-        if(a.length / polyGeneSize < polyCount && Math.random() < addPoly) {
-            this.addPoly();
-        }
+        
     } else {
         // Random spawn
         this.addPoly();
@@ -241,12 +245,14 @@ function Phenotype(p1, p2) {
     this.fitness = this.evalFitness();
 }
 
+// Add a randomly parameterized polygon to the genome
+// All values normalized from 0 - 1
 Phenotype.prototype.addPoly = function() {
-    // RGB components 0-255
+    // RGB components
     this.genome.push(Math.random());
     this.genome.push(Math.random());
     this.genome.push(Math.random());
-    // Alpha component 0-1
+    // Alpha component
     this.genome.push(minAlpha + Math.random() * (maxAlpha - minAlpha));
     // Polygon vert coordinates
     for(var j = 0; j < polySides; j++) {
@@ -262,10 +268,11 @@ Phenotype.prototype.evalFitness = function() {
     var dif = 0;
     // Accumulate square of differences of RGB values
     for(var i = 0; i < outData.length; i++){
+        // Skip alpha values
         if(i % 4 == 3) continue;
-        var d = inData[i] - outData[i];
+        var d = srcData[i] - outData[i];
         dif += d * d;
     }
     // Return normalized fitness percentage
-    return 1 - dif / (imgWidth * imgHeight * 3 * 256 * 256);
+    return 1 - dif / (srcWidth * srcHeight * 3 * 256 * 256);
 }
