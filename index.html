@@ -18,20 +18,26 @@
         <script>
         $(document).foundation();
         </script>
-        <nav class="top-bar">
+        <nav class="top-bar" data-options="is_hover:false">
+            <ul class="title-area">
+                <li class="name">
+                    <h1><a href="#">Hackathon: Image Evolution</a></h1>
+                </li>
+            </ul>
+        </nav>
         </nav>
         <div class="row">
             <div class="large-6 columns">
-                <h3>Source Image</h3>
+                <h4>Source Image</h4>
                 <div id="srcImg" class="panel imgFrame">
                     <!-- <img src="img/nina-dobrev-200.jpg"/> -->
-                    <img src="img/ff.png"/>
-                    <!-- <img src="img/dog.jpg"/> -->
+                    <!-- <img src="img/ff.png"/> -->
+                    <img src="img/n.jpg"/>
                     <canvas></canvas>
                 </div>
             </div>
             <div class="large-6 columns">
-                <h3>Best Fit Evolution</h3>
+                <h4>Best Fit Evolution</h4>
                 <div id="outImg" class="panel imgFrame">
                     <canvas></canvas>
                 </div>
@@ -39,30 +45,115 @@
         </div>
         <div class="row">
             <div class="large-12 columns">
-                <div id="console" class="panel">
-                    <textarea></textarea>
-                </div>
+                <fieldset id="console">
+                    <legend>Console</legend>
+                        <textarea></textarea>
+                </fieldset>
             </div>
         </div>
         <div class="row">
-            <div class="large-6 columns">
+            <div class="large-8 columns">
                 <fieldset>
-                    <legend>Controls</legend>
-
-                    <div class="row">
-                        <div class="small-6 columns">
-                            <a href="#" id="runBtn" class="small expand button radius">Run</a>
+                    <legend>Population Control</legend>
+                    <div class="large-6 columns">
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtPolyCount" placeholder="100">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Polygons</span>
+                            </div>
                         </div>
-                        <div class="small-6 columns">
-                            <a href="#" onclick="encode();" class="small expand button radius">Encode to Base64</a>
-                            <a href="#" onclick="decode();" class="small expand button radius">Decode from Base64</a>
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtPolySides" placeholder="6">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Vertices</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="large-6 columns">
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtPopSize" placeholder="20">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Population</span>
+                            </div>
+                        </div>
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtPopElite" placeholder="0.5">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Parent %</span>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Mutation Rates</legend>
+                    <div class="large-6 columns">
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtMaxMutations" placeholder="8">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Max #</span>
+                            </div>
+                        </div>
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtSoftMutate" placeholder="0.3">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Soft</span>
+                            </div>
+                        </div>
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtSoftMutateDrift" placeholder="0.1">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Drift</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="large-6 columns">
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtSwapPoly" placeholder="0.1">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Swap</span>
+                            </div>
+                        </div>
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtHardMutate" placeholder="0.1">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Hard</span>
+                            </div>
+                        </div>
+                        <div class="row collapse">
+                            <div class="large-8 columns">
+                                <input type="text" id="txtAddPoly" placeholder="0.1">
+                            </div>
+                            <div class="large-4 columns">
+                                <span class="postfix">Add</span>
+                            </div>
                         </div>
                     </div>
                 </fieldset>
             </div>
-            <div class="large-6 columns">
+            <div class="large-4 columns">
                 <fieldset>
-                    <legend>Configuration</legend>
+                    <legend>Controls</legend>
+                        <a href="#" id="runBtn" class="small expand success button radius">Run</a>
+                        <a href="#" onclick="encode();" class="small expand button radius">Encode to Base64</a>
+                        <a href="#" onclick="decode();" class="small expand button radius">Decode from Base64</a>
                 </fieldset>
             </div>
         </div>

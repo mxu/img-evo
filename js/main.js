@@ -1,16 +1,30 @@
-// GA configurations
-var polyCount = 100;                        // maximum number of polygons per genome
-var polySides = 6;                          // number of points per polygon
+// GA defaults
+var POLY_COUNT = 100;
+var POLY_SIDES = 6;
+var POP_SIZE = 20;
+var POP_ELITE = 0.5;
+var SOFT_MUTATE_DRIFT = 0.1;
+var SOFT_MUTATE = 0.3;
+var HARD_MUTATE = 0.1;
+var ADD_POLY = 0.05;
+var SWAP_POLY = 0.1;
+var MAX_MUTATIONS = 8;
+
+// GA parameters
+var polyCount = POLY_COUNT;                 // maximum number of polygons per genome
+var polySides = POLY_SIDES;                 // number of points per polygon
+var popSize = POP_SIZE;                     // number of genomes per generation
+var popElite = POP_ELITE;                   // percentage of each generation to reproduce
+var softMutateDrift = SOFT_MUTATE_DRIFT;    // maximum amount of change for a soft mutation
+var softMutate = SOFT_MUTATE;               // percentage chance of a soft mutation
+var hardMutate = HARD_MUTATE;               // percentage chance of a hard mutation
+var addPoly = ADD_POLY;                     // percentage chance of adding a polygon to the genome
+var swapPoly = SWAP_POLY;                   // percentage chance of swapping two polygons in the genome
+var maxMutations = MAX_MUTATIONS;           // maximum mutations per generation
 var polyGeneSize = 4 + polySides * 2;       // number of genes to represent a complete poly
 var minAlpha = 0.2;                         // minimum transparency
 var maxAlpha = 0.6;                         // maximum transparency
-var popSize = 20;                           // number of genomes per generation
-var popElite = 0.5;                         // percentage of each generation to reproduce
-var softMutateDrift = 0.05;                 // maximum amount of change for a soft mutation
-var softMutate = 0.4;                       // percentage chance of a soft mutation
-var hardMutate = 0.05;                      // percentage chance of a hard mutation
-var addPoly = 0.01;                         // percentage chance of adding a polygon to the genome
-var maxMutations = 6;                       // maximum mutations per generation
+
 // Globals
 var srcCtx;
 var srcData;
@@ -51,6 +65,19 @@ $(document).ready(function() {
 
 // Start evolution
 function run() {
+    // Check inputs
+    polyCount = checkInput(POLY_COUNT, '#txtPolyCount', parseInt);
+    polySides = checkInput(POLY_SIDES, '#txtPolySides', parseInt);
+    popSize = checkInput(POP_SIZE, '#txtPopSize', parseInt);
+    popElite = checkInput(POP_ELITE, '#txtPopElite', parseFloat);
+    softMutateDrift = checkInput(SOFT_MUTATE_DRIFT, '#txtSoftMutateDrift', parseFloat);
+    softMutate = checkInput(SOFT_MUTATE, '#txtSoftMutate', parseFloat);
+    hardMutate = checkInput(HARD_MUTATE, '#txtHardMutate', parseFloat);
+    addPoly = checkInput(ADD_POLY, '#txtAddPoly', parseFloat);
+    swapPoly = checkInput(SWAP_POLY, '#txtSwapPoly', parseFloat);
+    maxMutations = checkInput(MAX_MUTATIONS, '#txtMaxMutations', parseInt);
+    polyGeneSize = 4 + polySides * 2;
+    // Initialize a new population
     pop = new Population(popSize);
     gen = 0;
     startTime = new Date().getTime();
@@ -63,10 +90,19 @@ function run() {
     btn.click(stop);
 }
 
+function checkInput(orig, element, func) {
+    var e = $(element);
+    var val = func(e.val());
+    if(val) return val;
+    e.val(orig);
+    return orig;
+}
+
 // Stop evolution
 function stop() {
     clearTimeout(runTimer);
     runTimer = 0;
+    drawGenome(pop.getBestFit().genome);
     // Rebind button
     var btn = $('#runBtn');
     btn.text('Run');
@@ -81,6 +117,7 @@ function update() {
     gen++;
     var runTime = ((new Date().getTime() - startTime) / 1000);
     var bestFit = pop.getBestFit();
+    //drawGenome(bestFit.genome);
     log("Generation: " + gen,
         "Best fit: " + (bestFit.fitness * 100).toFixed(6) + "%",
         "Polygons: " + (bestFit.genome.length / polyGeneSize),
@@ -125,10 +162,11 @@ function drawGenome(genome) {
     outCtx.fillRect(0, 0, srcWidth, srcHeight);
     // Loop through the genome and draw each poly
     for(var i = 0; i < genome.length; i += polyGeneSize) {
-        outCtx.fillStyle = 'rgba(' + Math.floor(genome[i] * 255) +
-            ',' + Math.floor(genome[i+1] * 255) +
-            ',' + Math.floor(genome[i+2] * 255) +
-            ',' + genome[i+3] + ')';
+        outCtx.fillStyle = 'rgba(' + 
+            Math.floor(genome[i] * 255) + ',' + 
+            Math.floor(genome[i+1] * 255) + ',' + 
+            Math.floor(genome[i+2] * 255) + ',' + 
+            genome[i+3] + ')';
         outCtx.beginPath();
         outCtx.moveTo(genome[i+4] * srcWidth, genome[i+5] * srcHeight);for(var j = 1; j < polySides; j++)
             outCtx.lineTo(genome[i+5+j] * srcWidth, genome[i+6+j] * srcHeight);
@@ -162,6 +200,7 @@ function Population(n) {
         this.members.push(new Phenotype());
 }
 
+// Produce the next generation of genomes
 Population.prototype.genStep = function() {
     // Cull the lower end of population
     var numParents = Math.floor(popSize * popElite);
@@ -213,29 +252,17 @@ function Phenotype(p1, p2) {
                     this.genome.push(p2[i + j]);
         }
         // Mutations
-        var mutations = rInt(maxMutations) + 1;
-        for(var i = 0; i < mutations; i++) {
+        for(var i = 0; i < maxMutations; i++) {
             if(Math.random() < softMutate) {
-                // Soft mutation
-                var mIndex = rInt(this.genome.length);
-                var val = this.genome[mIndex] + Math.random() * softMutateDrift * 2 - softMutateDrift;
-                if(mIndex % polyGeneSize == 3)
-                    this.genome[mIndex] = Math.max(maxAlpha, Math.min(minAlpha, val));
-                else    
-                    this.genome[mIndex] = Math.max(1, Math.min(0, val));
+                this.softMutate();
             } else if(Math.random() < hardMutate) {
-                // Hard mutation
-                var mIndex = rInt(this.genome.length);
-                if(mIndex % polyGeneSize == 3)
-                    this.genome[mIndex] = minAlpha + Math.random() * (maxAlpha - minAlpha);
-                else
-                    this.genome[mIndex] = Math.random();    
+                this.hardMutate();  
             } else if(this.genome.length / polyGeneSize < polyCount && Math.random() < addPoly) {
-                // Add polyton
                 this.addPoly();
+            } else if(Math.random() < swapPoly) {
+                this.swapPoly();
             }
         }
-        
     } else {
         // Random spawn
         this.addPoly();
@@ -243,6 +270,27 @@ function Phenotype(p1, p2) {
 
     // Calculate fitness
     this.fitness = this.evalFitness();
+}
+
+// Soft mutation
+// Shifts one gene by a small amount
+Phenotype.prototype.softMutate = function() {
+    var mIndex = rInt(this.genome.length);
+    var val = this.genome[mIndex] + Math.random() * softMutateDrift * 2 - softMutateDrift;
+    if(mIndex % polyGeneSize == 3)
+        this.genome[mIndex] = Math.min(maxAlpha, Math.max(minAlpha, val));
+    else    
+        this.genome[mIndex] = Math.min(1, Math.max(0, val));
+}
+
+// Hard mutation
+// Set one gene to a random value
+Phenotype.prototype.hardMutate = function() {
+    var mIndex = rInt(this.genome.length);
+    if(mIndex % polyGeneSize == 3)
+        this.genome[mIndex] = minAlpha + Math.random() * (maxAlpha - minAlpha);
+    else
+        this.genome[mIndex] = Math.random();
 }
 
 // Add a randomly parameterized polygon to the genome
@@ -258,6 +306,22 @@ Phenotype.prototype.addPoly = function() {
     for(var j = 0; j < polySides; j++) {
         this.genome.push(Math.random());
         this.genome.push(Math.random());
+    }
+}
+
+// Swap two polygones in the genome
+// Affects the order in which they are rendered
+Phenotype.prototype.swapPoly = function() {
+    if(this.genome.length <= polyGeneSize) return;
+    var a = rInt(this.genome.length / polyGeneSize);
+    b = rInt(this.genome.length / polyGeneSize);
+    while(b == a)
+        b = rInt(this.genome.length / polyGeneSize);
+    var temp = [];
+    for(var i = 0; i < polyGeneSize; i++) {
+        temp[i] = this.genome[a + i];
+        this.genome[a * polyGeneSize + i] = this.genome[b * polyGeneSize + i];
+        this.genome[b * polyGeneSize + i] = temp[i];
     }
 }
 
