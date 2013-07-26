@@ -1,13 +1,13 @@
 // GA configurations
-var polyCount = 50;
+var polyCount = 100;
 var polySides = 6;
-var minAlpha = 0.1;
+var minAlpha = 0.2;
 var maxAlpha = 0.6;
-var popSize = 20;
+var popSize = 10;
 var popElite = 0.25;
 var polyGeneSize = 4 + polySides * 2;
-var hardMutate = 0.001;
-var softMutate = 0.01;
+var hardMutate = 0;
+var softMutate = 0.005;
 var softMutateDrift = 0.2;
 var addPoly = 0.05;
 // Globals
@@ -47,13 +47,13 @@ $(document).ready(function() {
     $('#runBtn').click(run);
 });
 
-// Primary loop
+// Start evolution
 function run() {
     pop = new Population(popSize);
     gen = 0;
     startTime = new Date().getTime();
     update();
-
+    // Rebind button
     var btn = $('#runBtn');
     btn.text('Stop');
     btn.addClass('alert');
@@ -62,11 +62,11 @@ function run() {
 
 }
 
-// Stop timer
+// Stop evolution
 function stop() {
     clearTimeout(runTimer);
     runTimer = 0;
-
+    // Rebind button
     var btn = $('#runBtn');
     btn.text('Run');
     btn.removeClass('alert');
@@ -79,14 +79,12 @@ function update() {
     pop.genStep();
     gen++;
     var runTime = ((new Date().getTime() - startTime) / 1000);
-    if(gen % 2 == 0) {
-        var bestFit = pop.getBestFit();
-        log("Generation: " + gen,
-            "Best fit: " + (bestFit.fitness * 100).toFixed(6) + "%",
-            "Polygons: " + (bestFit.genome.length / polyGeneSize),
-            "Time: " + runTime.toFixed(2),
-            "Time per gen: " + (runTime / gen).toFixed(2));
-    }
+    var bestFit = pop.getBestFit();
+    log("Generation: " + gen,
+        "Best fit: " + (bestFit.fitness * 100).toFixed(6) + "%",
+        "Polygons: " + (bestFit.genome.length / polyGeneSize),
+        "Time: " + runTime.toFixed(2),
+        "Time per gen: " + (runTime / gen).toFixed(2));
     runTimer = setTimeout(update, 10);
 }
 
@@ -131,12 +129,7 @@ function drawGenome(genome) {
             ',' + Math.floor(genome[i+2] * 255) +
             ',' + genome[i+3] + ')';
         outCtx.beginPath();
-        outCtx.moveTo(genome[i+4] * imgWidth, genome[i+5] * imgHeight);
-        // outCtx.quadraticCurveTo(genome[i+6] * imgWidth, genome[i+7] * imgHeight, genome[i+8] * imgWidth, genome[i+9] * imgHeight);
-        // outCtx.quadraticCurveTo(genome[i+10] * imgWidth, genome[i+11] * imgHeight, genome[i+4] * imgWidth, genome[i+5] * imgHeight);
-        // outCtx.quadraticCurveTo(genome[i+10] * imgWidth, genome[i+11] * imgHeight, genome[i+12] * imgWidth, genome[i+13] * imgHeight);
-        // outCtx.quadraticCurveTo(genome[i+14] * imgWidth, genome[i+15] * imgHeight, genome[i+4] * imgWidth, genome[i+5] * imgHeight);
-        for(var j = 1; j < polySides; j++)
+        outCtx.moveTo(genome[i+4] * imgWidth, genome[i+5] * imgHeight);for(var j = 1; j < polySides; j++)
             outCtx.lineTo(genome[i+5+j] * imgWidth, genome[i+6+j] * imgHeight);
         outCtx.closePath();
         outCtx.fill();
@@ -169,27 +162,24 @@ function Population(n) {
 }
 
 Population.prototype.genStep = function() {
-    // Sort current population
-    this.members = this.members.sort(fitSort);
-    var children = [];
     // Cull the lower end of population
     var numParents = Math.floor(popSize * popElite);
-    var numChildren = popSize - numParents;
+    this.members.length = numParents;
     // Refill population by breeding the upper end of current population
-    while(children.length < popSize) {
+    while(this.members.length < popSize) {
         var a = rInt(numParents);
         var b = rInt(numParents);
         while(b == a)
             b = rInt(numParents);
         var p1 = this.members[a];
         var p2 = this.members[b];
-        children.push(new Phenotype(p1.genome, p2.genome));
+        this.members.push(new Phenotype(p1.genome, p2.genome));
     }
-    this.members = children;
 }
 
 Population.prototype.getBestFit = function() {
-    return this.members.sort(fitSort)[0];
+    this.members = this.members.sort(fitSort);
+    return this.members[0];
 }
 
 /***
