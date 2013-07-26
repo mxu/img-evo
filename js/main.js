@@ -8,7 +8,7 @@ var popElite = 0.25;
 var polyGeneSize = 4 + polySides * 2;
 var hardMutate = 0.001;
 var softMutate = 0.01;
-var softMutateDrift = 0.1;
+var softMutateDrift = 0.2;
 var addPoly = 0.05;
 // Globals
 var inCtx;
@@ -18,6 +18,8 @@ var imgWidth;
 var imgHeight;
 var runTimer;
 var startTime;
+var pop;
+var gen;
 
 $(document).ready(function() {
     // Get image dimensions
@@ -47,12 +49,11 @@ $(document).ready(function() {
 function run() {
     // Reset timer
     if(runTimer) {
-        clearTimeout(runTimer);
-        runTimer = 0;
+        stop();
     }
     // Create initial population
-    var pop = new Population(popSize);
-    var gen = 0;
+    pop = new Population(popSize);
+    gen = 0;
 
     function update() {
         pop.genStep();
@@ -71,12 +72,33 @@ function run() {
     update();
 }
 
+function stop() {
+    clearTimeout(runTimer);
+    runTimer = 0;
+}
+
+// Encode genome to base 64
+function encode() {
+    var bestFit = pop.getBestFit();
+    var encodedData = window.btoa(bestFit.genome.join());
+    log(encodedData);
+}
+
+// Decode base 64 genome
+function decode() {
+    var encodedData = $('#console > textarea').val();
+    var decodedData = window.atob(encodedData);
+    var parsedDecode = decodedData.split(',');
+    drawGenome(parsedDecode);
+    log(decodedData);
+}
+
 // Output information to the page
 function log() {
     var args = [];
     for(var i = 0; i < arguments.length; i++)
         args.push(arguments[i]);
-    $('#console > textarea').text(args.join("\r\n"));
+    $('#console > textarea').val(args.join("\r\n"));
 }
 
 // Get a random integer between 0 and n
@@ -97,6 +119,10 @@ function drawGenome(genome) {
             ',' + genome[i+3] + ')';
         outCtx.beginPath();
         outCtx.moveTo(genome[i+4] * imgWidth, genome[i+5] * imgHeight);
+        // outCtx.quadraticCurveTo(genome[i+6] * imgWidth, genome[i+7] * imgHeight, genome[i+8] * imgWidth, genome[i+9] * imgHeight);
+        // outCtx.quadraticCurveTo(genome[i+10] * imgWidth, genome[i+11] * imgHeight, genome[i+4] * imgWidth, genome[i+5] * imgHeight);
+        // outCtx.quadraticCurveTo(genome[i+10] * imgWidth, genome[i+11] * imgHeight, genome[i+12] * imgWidth, genome[i+13] * imgHeight);
+        // outCtx.quadraticCurveTo(genome[i+14] * imgWidth, genome[i+15] * imgHeight, genome[i+4] * imgWidth, genome[i+5] * imgHeight);
         for(var j = 1; j < polySides; j++)
             outCtx.lineTo(genome[i+5+j] * imgWidth, genome[i+6+j] * imgHeight);
         outCtx.closePath();
