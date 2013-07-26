@@ -38,7 +38,7 @@ var pop;
 var gen;
 var seed;
 
-$(document).ready(function() {
+$(window).load(function() {
     // Get image dimensions
     var img = $('#srcImg > img')[0];
     srcWidth = img.width;
