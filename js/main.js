@@ -143,7 +143,7 @@ function decode() {
     var parsedDecode = decodedData.split(',');
     polySides = parsedDecode.shift();
     $('#txtPolySides').val(polySides);
-    // drawGenome(parsedDecode);
+    drawGenome(parsedDecode);
     seed = parsedDecode;
     log('Genome decoded and seeded');
 }
@@ -262,7 +262,8 @@ function Phenotype(p1, p2) {
         this.mutate();
     } else if(seed) {
         // Seed from import
-        this.genome = seed;
+        for(var i = 0; i < seed.length; i++)
+            this.genome[i] = seed[i];
         // Mutate to prevent inbreeding
         this.mutate();
     } else {
