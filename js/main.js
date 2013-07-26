@@ -35,6 +35,7 @@ var runTimer;
 var startTime;
 var pop;
 var gen;
+var seed;
 
 $(document).ready(function() {
     // Get image dimensions
@@ -90,6 +91,7 @@ function run() {
     btn.click(stop);
 }
 
+// Validate form inputs with default backup
 function checkInput(orig, element, func) {
     var e = $(element);
     var val = func(e.val());
@@ -129,6 +131,7 @@ function update() {
 // Encode genome to base 64
 function encode() {
     var bestFit = pop.getBestFit();
+    bestFit.genome.unshift(polySides);
     var encodedData = window.btoa(bestFit.genome.join());
     log(encodedData);
 }
@@ -138,8 +141,11 @@ function decode() {
     var encodedData = $('#console > textarea').val();
     var decodedData = window.atob(encodedData);
     var parsedDecode = decodedData.split(',');
-    drawGenome(parsedDecode);
-    log(decodedData);
+    polySides = parsedDecode.shift();
+    $('#txtPolySides').val(polySides);
+    // drawGenome(parsedDecode);
+    seed = parsedDecode;
+    log('Genome decoded and seeded');
 }
 
 // Output information to the page
@@ -198,6 +204,7 @@ function Population(n) {
     // Spawn initial population
     for(var i = 0; i < n; i++)
         this.members.push(new Phenotype());
+    if(seed) seed = null;
 }
 
 // Produce the next generation of genomes
@@ -252,17 +259,12 @@ function Phenotype(p1, p2) {
                     this.genome.push(p2[i + j]);
         }
         // Mutations
-        for(var i = 0; i < maxMutations; i++) {
-            if(Math.random() < softMutate) {
-                this.softMutate();
-            } else if(Math.random() < hardMutate) {
-                this.hardMutate();  
-            } else if(this.genome.length / polyGeneSize < polyCount && Math.random() < addPoly) {
-                this.addPoly();
-            } else if(Math.random() < swapPoly) {
-                this.swapPoly();
-            }
-        }
+        this.mutate();
+    } else if(seed) {
+        // Seed from import
+        this.genome = seed;
+        // Mutate to prevent inbreeding
+        this.mutate();
     } else {
         // Random spawn
         this.addPoly();
@@ -270,6 +272,21 @@ function Phenotype(p1, p2) {
 
     // Calculate fitness
     this.fitness = this.evalFitness();
+}
+
+// Try each type of mutation on genome
+Phenotype.prototype.mutate = function() {
+    for(var i = 0; i < maxMutations; i++) {
+        if(Math.random() < softMutate) {
+            this.softMutate();
+        } else if(Math.random() < hardMutate) {
+            this.hardMutate();  
+        } else if(this.genome.length / polyGeneSize < polyCount && Math.random() < addPoly) {
+            this.addPoly();
+        } else if(Math.random() < swapPoly) {
+            this.swapPoly();
+        }
+    }
 }
 
 // Soft mutation
