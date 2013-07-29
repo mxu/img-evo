@@ -164,6 +164,7 @@ function decode() {
     });
 }
 
+// Draw the current best fit to modal canvas
 function showBest() {
     var bestFit = pop.getBestFit();
     paintGenome(bestFit.genome, bigCanvas.getContext('2d'), 4);
@@ -201,7 +202,8 @@ function paintGenome(genome, ctx, scale) {
             Math.floor(genome[i+2] * 255) + ',' + 
             genome[i+3] + ')';
         ctx.beginPath();
-        ctx.moveTo(genome[i+4] * w, genome[i+5] * h);for(var j = 1; j < polySides; j++)
+        ctx.moveTo(genome[i+4] * w, genome[i+5] * h);
+        for(var j = 1; j < polySides; j++)
             ctx.lineTo(genome[i+5+j] * w, genome[i+6+j] * h);
         ctx.closePath();
         ctx.fill();
